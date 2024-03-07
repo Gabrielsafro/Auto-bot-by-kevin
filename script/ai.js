@@ -1,53 +1,34 @@
-const axios = require('axios');
+const { Hercai } = require('hercai');
+const herc = new Hercai();
 
-const Prefixes = [
-  '/ai',
-  'kim',
-  'Nemo',
-  '+ai',
-  'nemo',
-  'ai',
-  'ask',
-];
+module.exports.config = {
+  name: 'ai',
+  version: '1.1.0',
+  hasPermssion: 0,
+  credits: 'Yan Maglinte',
+  description: 'An AI command using Hercai API!',
+  usePrefix: false,
+  commandCategory: 'chatbots',
+  usages: 'Ai [prompt]',
+  cooldowns: 5,
+};
 
-module.exports = {
-  config: {
-    name: "ask",
-    version: 1.0,
-    author: "OtinXSandip",
-    longDescription: "AI",
-    category: "ai",
-    guide: {
-      en: "{p} questions",
-    },
-  },
-  onStart: async function () {},
-  onChat: async function ({ api, event, args, message }) {
-    try {
-      
-      const prefix = Prefixes.find((p) => event.body && event.body.toLowerCase().startsWith(p));
-      if (!prefix) {
-        return; // Invalid prefix, ignore the command
-      }
-      const prompt = event.body.substring(prefix.length).trim();
-   if (!prompt) {
-        await message.reply("Hey I am Stanley stawa ask me questions dear🦥");
-        return;
-      }
+module.exports.run = async function ({ api, event, args }) {
+  const prompt = args.join(' ');
 
-
-      const response = await axios.get(`https://sandipbaruwal.onrender.com/gpt?prompt=${encodeURIComponent(prompt)}`);
-      const answer = response.data.answer;
-
- 
-    await message.reply({ body: `Stanley 🐱
-━━━━━━━━━━━━━        
-${answer}
-━━━━━━━━━━━━━`,
-});
-
-   } catch (error) {
-      console.error("Error:", error.message);
+  try {
+    // Available Models: "v3", "v3-32k", "turbo", "turbo-16k", "gemini"
+    if (!prompt) {
+      api.sendMessage('Please specify a message!', event.threadID, event.messageID);
+      api.setMessageReaction('❓', event.messageID, () => {}, true);
+    } else {
+      api.setMessageReaction('⏱️', event.messageID, () => {}, true);
+      const response = await herc.question({ model: 'v3', content: prompt });
+      api.sendMessage(response.reply, event.threadID, event.messageID);
+      api.setMessageReaction('', event.messageID, () => {}, true);
     }
+  } catch (error) {
+    api.sendMessage('⚠️ Something went wrong: ' + error, event.threadID, event.messageID);
+    api.setMessageReaction('⚠️', event.messageID, () => {}, true);
   }
 };
